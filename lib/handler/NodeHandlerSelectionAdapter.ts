@@ -135,6 +135,24 @@ export abstract class NodeHandlerSelectionAdapter<T extends SelectionNode> exten
           createQuadPattern = false;
 
           break;
+        } else if (argument.name.value === 'rpt') {
+          // 'rpt'-arguments also do not create an
+          // additional predicate link but instead create
+          // oneOrMore, zeroOrOne, oneOrMany or sequential
+          // paths
+          // This *must* be performed after the 'alt'
+          // arguements are handled
+
+          let range = argument.value;
+          if (range.kind !== 'ListValue') {
+            range = { kind: 'ListValue', values: [ range, range ] };
+          }
+
+          operations.push(this.util.createRepeatPath(convertContext.subject, fieldNode.name, range as unknown as [string, string], object,
+            convertContext.graph, convertContext.context));
+          createQuadPattern = false;
+          
+          break;
         }
       }
     }

@@ -782,6 +782,81 @@ SELECT ?hero_name WHERE {
 }
 ```
 
+### Repeated fields
+
+If you wish to have functionality of SPARQLs
+`zeroOrMorePath`, `oneOrMorePath` or `zeroOrOnePath` then `rpt`
+repeated arguement provides a way to do this.
+
+Context:
+```json
+{
+    "person": "http://example.org/person",
+    "friend": "http://example.org/friend",
+    "aquaintance": "http://example.org/aquaintance",
+}
+```
+
+GraphQL:
+```graphql
+{
+  person {
+    a(rpt: [0, Infinity])
+  }
+}
+```
+
+SPARQL:
+```sparql
+SELECT ?hero_name WHERE {
+  ?b1 <http://example.org/person> ?hero.
+  ?hero a? ?hero_name.
+}
+```
+
+_If you want to define an exact number of repitions, you can define them it as a single number like this: `friend(rpt: 3)`_
+
+GraphQL:
+```graphql
+{
+  person {
+    friend(rpt: 3)
+  }
+}
+```
+
+SPARQL:
+```sparql
+SELECT ?hero_name WHERE {
+  ?b1 <http://example.org/person> ?hero.
+  ?hero (<http://example.org/friend>/<http://example.org/friend>/<http://example.org/friend>) ?hero_name.
+}
+```
+
+_This can be used in conjunction with alternative paths: `friend(alt: aquaintance, rpt: 3)`_
+
+GraphQL:
+```graphql
+{
+  person {
+    friend(alt: aquaintance, rpt: 3)
+  }
+}
+```
+
+SPARQL:
+```sparql
+SELECT ?hero_name WHERE {
+  ?b1 <http://example.org/person> ?hero.
+  ?hero (
+    (<http://example.org/friend>|<http://example.org/aquaintance>)/
+    (<http://example.org/friend>|<http://example.org/aquaintance>)/
+    (<http://example.org/friend>|<http://example.org/aquaintance>)
+    ) ?hero_name.
+}
+```
+
+
 ## Converting to tree-based results
 
 Using a tool such as [SPARQL-Results+JSON to tree](https://github.com/rubensworks/sparqljson-to-tree.js),

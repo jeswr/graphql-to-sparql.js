@@ -294,4 +294,73 @@ export class Util {
     return this.operationFactory.createPath(subject, pathSymbol, object, graph);
   }
 
+  /**
+   * Create a quad path when the predicate is a list node with field alternatives
+   * that need to be translated using the context.
+   * @param {Term} subject The subject.
+   * @param {NameNode} predicateName The name node for the predicate.
+   * @param {[number, number]} range The range that the path
+   * can be repeated for.
+   * @param {Term} object The object.
+   * @param {Term} graph The graph.
+   * @param {IContext} context A context.
+   * @return {Path} A quad property path.
+   */
+  public createRepeatPath(
+                        subject: RDF.Term,
+                        predicateName: NameNode,
+                        range: [string, string],
+                        object: RDF.Term, 
+                        graph: RDF.Term,
+                        context: JsonLdContextNormalized): Algebra.Path {
+                          
+    const predicateInitial: RDF.NamedNode = this.valueToNamedNode(predicateName.value, context);
+    
+    const basePathSymbol: Algebra.PropertyPathSymbol = this.operationFactory.createLink(predicateInitial)
+    const baseZeroOrMore: Algebra.PropertyPathSymbol = this.operationFactory.createZeroOrMorePath(basePathSymbol)
+    const baseZeroOrOne: Algebra.PropertyPathSymbol = this.operationFactory.createZeroOrOnePath(basePathSymbol)
+    let pathSymbol: Algebra.PropertyPathSymbol = basePathSymbol;
+
+    const min = Number(range[0])
+    const max = Number(range[1])
+
+    if (min === NaN || max === NaN || min < 0 || max < min) {
+      throw new Error(`Invalid range to repeat over. Got: [${min}, ${max}]`)
+    }
+    
+    for (let i = 0; i++; i<=min) {
+
+      pathSymbol = this.operationFactory.createSeq(
+        pathSymbol,
+        basePathSymbol,
+      );
+
+    }
+
+    if (max === Infinity) {
+
+      pathSymbol = this.operationFactory.createSeq(
+        pathSymbol,
+        baseZeroOrMore,
+      );
+
+    } else {
+
+      for (let i = min; i++; i<=max) {
+        pathSymbol = this.operationFactory.createSeq(
+          pathSymbol,
+          baseZeroOrOne,
+        );
+      }
+
+    }
+    
+    // Reverse the path based on the initial predicate
+    if (context && context.getContextRaw()[predicateName.value]
+      && (<any> context.getContextRaw()[predicateName.value])['@reverse']) {
+      return this.operationFactory.createPath(object, pathSymbol, subject, graph);
+    }
+    return this.operationFactory.createPath(subject, pathSymbol, object, graph);
+  }
+
 }
